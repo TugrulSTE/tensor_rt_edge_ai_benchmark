@@ -1,6 +1,40 @@
-# tensor_rt_edge_ai_benchmark
+# TensorRT Edge AI One-Image Inferencing Via Native C++ APIs & Benchmark
 Edge AI Pipeline: Custom CUDA Pre-processing Kernel &amp; TensorRT Inference via Different Quantization Techniques on Jetson Orin Nano
 
+## Goals & Pre-Conditions
+This project aims to classify the images on Edge AI devices, in this case, it is NVIDIA Jetson Orin Nano, analyze the performance across different techniques. Instead of using standard Edge Impulse SDK files, the raw **.tflite** file is converted into device-specific **.engine** file, native CUDA API methods are utilized to enable the GPU cores and accelerate the inferencing process.
+
+## Methodology
+**.engine** file includes all the necessary mathematical operation from beginning to producing output classes. 
+
+
+## Flowchart
+[Host CPU Memory]
+       │
+       │  raw_features (uint32 hex array - 4 bytes/pixel)
+       │  cudaMemcpyHostToDevice (Reduced PCIe / Memory Traffic)
+       ▼
+[GPU VRAM (Device Memory)]
+       │
+       │  d_raw_in (Packed Hex)
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Custom CUDA Kernel: listExtract<<<blocks, threads>>>       │
+│  - 1 Thread per Pixel                                       │
+│  - Parallel Bitwise Unpacking: (Hex >> Shift) & 0xFF        │
+│  - In-place FP32 Conversion & Channel Interleaving (HWC)    │
+└─────────────────────────────────────────────────────────────┘
+       │
+       │  d_input (Extracted FP32 RGB Tensor)
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  TensorRT Execution Context (INT8 / FP32 Engine)            │
+│  - context->executeV2(bindings)                             │
+│  - Zero-Copy / Zero-Overhead Input Consumption              │
+└─────────────────────────────────────────────────────────────┘
+       │
+       ▼
+[GPU VRAM: d_output] ──► cudaMemcpyDeviceToHost ──► [Host: Results]
 
 ## Data Preprocessing Benchmark
 
