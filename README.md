@@ -33,49 +33,35 @@ With the last call to **cudaMemcpy(..., d_output, ..., cudaMemcpyDeviceToHost)**
 
 ## Flowchart
 
-[Host CPU Memory]
+flowchart TB
+    A["🖥️ Host CPU Memory<br/><br/>raw_features<br/>(uint32 hex array · 4 bytes/pixel)"]
+    
+    B["⚡ CUDA H2D Transfer<br/><br/>cudaMemcpyHostToDevice<br/>Reduced PCIe / Memory Traffic"]
+    
+    C["🧠 GPU VRAM<br/><br/>d_raw_in<br/>(Packed Hex)"]
+    
+    D["🚀 Custom CUDA Kernel<br/><br/><b>listExtract<<<blocks, threads>>></b><br/>• 1 Thread / Pixel<br/>• Parallel Bitwise Unpacking<br/>• (Hex >> Shift) & 0xFF<br/>• FP32 Conversion<br/>• HWC Channel Interleaving"]
+    
+    E["🎯 GPU Tensor<br/><br/>d_input<br/>(Extracted FP32 RGB)"]
+    
+    F["🔥 TensorRT Execution Context<br/><br/>INT8 / FP32 Engine<br/>context->executeV2(bindings)<br/>Zero-Copy Input Consumption"]
+    
+    G["📦 GPU VRAM<br/><br/>d_output"]
+    
+    H["💻 Host CPU<br/><br/>Results"]
 
-       │
-       
-       │  raw_features (uint32 hex array - 4 bytes/pixel)
-       
-       │  cudaMemcpyHostToDevice (Reduced PCIe / Memory Traffic)
-       
-       ▼
+    A --> B --> C --> D --> E --> F --> G
+    G -->|"cudaMemcpyDeviceToHost"| H
 
-[GPU VRAM (Device Memory)]
+    classDef host fill:#1f2937,stroke:#60a5fa,color:#fff,stroke-width:2px
+    classDef gpu fill:#172554,stroke:#38bdf8,color:#fff,stroke-width:2px
+    classDef kernel fill:#312e81,stroke:#a78bfa,color:#fff,stroke-width:3px
+    classDef tensorrt fill:#14532d,stroke:#4ade80,color:#fff,stroke-width:3px
 
-       │
-       
-       │  d_raw_in (Packed Hex)
-       
-       ▼
-
-│  Custom CUDA Kernel: listExtract<<<blocks, threads>>>       │
-
-│  - 1 Thread per Pixel                                       │
-
-│  - Parallel Bitwise Unpacking: (Hex >> Shift) & 0xFF        │
-
-│  - In-place FP32 Conversion & Channel Interleaving (HWC)    │
-
-       │
-       
-       │  d_input (Extracted FP32 RGB Tensor)
-       
-       ▼
-
-│  TensorRT Execution Context (INT8 / FP32 Engine)            │
-
-│  - context->executeV2(bindings)                             │
-
-│  - Zero-Copy / Zero-Overhead Input Consumption              │
-
-       │
-
-       ▼
-
-[GPU VRAM: d_output] ──► cudaMemcpyDeviceToHost ──► [Host: Results]
+    class A,H host
+    class C,E,G gpu
+    class D kernel
+    class F tensorrt
 
 
 ## Data Preprocessing Benchmark
