@@ -33,21 +33,22 @@ With the last call to **cudaMemcpy(..., d_output, ..., cudaMemcpyDeviceToHost)**
 
 ## Flowchart
 
+```mermaid
 flowchart TB
     A["🖥️ Host CPU Memory<br/><br/>raw_features<br/>(uint32 hex array · 4 bytes/pixel)"]
-    
+
     B["⚡ CUDA H2D Transfer<br/><br/>cudaMemcpyHostToDevice<br/>Reduced PCIe / Memory Traffic"]
-    
+
     C["🧠 GPU VRAM<br/><br/>d_raw_in<br/>(Packed Hex)"]
-    
-    D["🚀 Custom CUDA Kernel<br/><br/><b>listExtract<<<blocks, threads>>></b><br/>• 1 Thread / Pixel<br/>• Parallel Bitwise Unpacking<br/>• (Hex >> Shift) & 0xFF<br/>• FP32 Conversion<br/>• HWC Channel Interleaving"]
-    
+
+    D["🚀 Custom CUDA Kernel<br/><br/><b>listExtract&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;</b><br/>• 1 Thread / Pixel<br/>• Parallel Bitwise Unpacking<br/>• (Hex >> Shift) & 0xFF<br/>• FP32 Conversion<br/>• HWC Channel Interleaving"]
+
     E["🎯 GPU Tensor<br/><br/>d_input<br/>(Extracted FP32 RGB)"]
-    
+
     F["🔥 TensorRT Execution Context<br/><br/>INT8 / FP32 Engine<br/>context->executeV2(bindings)<br/>Zero-Copy Input Consumption"]
-    
+
     G["📦 GPU VRAM<br/><br/>d_output"]
-    
+
     H["💻 Host CPU<br/><br/>Results"]
 
     A --> B --> C --> D --> E --> F --> G
@@ -62,7 +63,7 @@ flowchart TB
     class C,E,G gpu
     class D kernel
     class F tensorrt
-
+```
 
 ## Data Preprocessing Benchmark
 
